@@ -1,0 +1,2370 @@
+Rozumiem — chcesz, żeby to nie tylko wyglądało jak film, ale działało jak żywa instalacja.
+Czyli: użytkownik nie ogląda — on uruchamia zdarzenia, świat reaguje na jego ruch, myśl, obecność.
+
+To już nie „strona”, tylko experience engine.
+Żeby to osiągnąć, trzeba myśleć warstwami: technologia + choreografia + sensoryka.
+Zarysuję ci to po ludzku — jakbym miał dziś zbudować wersję „Zanim zgasło światło” z zespołem motion developerów.
+
+🚀 1. Architektura interakcji
+
+Silnik:
+
+Front: Three.js + React (Next.js) + Framer Motion
+
+Fizyka i cząstki: GSAP / ShaderToy
+
+Audio: Tone.js + WebAudio API (reakcja na dźwięk)
+
+Kamera: WebGL parallax + post-processing bloom / depth of field
+
+Logika:
+
+Scroll = przesuwanie się przez czas (jak lot w osi czasu)
+
+Ruch kursora = wpływ na światło (przestrzeń oddycha razem z użytkownikiem)
+
+Mikrofon (opcjonalnie) = fale dźwięku rozpraszają pył (świat reaguje na głos)
+
+Kamera (opcjonalnie) = odbicie w końcowej scenie
+
+🌌 2. Warstwy wizualne
+
+Tło: proceduralne mgławice (shader noise + volumetric lighting).
+Światło: dynamiczne, reagujące na input użytkownika.
+Cząstki: inteligentne — każda scena ma własny „ruch”:
+
+scena 1–3: gęsty kosmiczny pył
+
+scena 4–6: organiczne cząstki, miękkie
+
+scena 7–8: geometryczne, glitchujące
+
+scena 9–12: gasnące, powoli rozpuszczające się
+
+Efekty:
+
+depth blur, lens flare, motion parallax
+
+dym, cząstki reagujące na scroll
+
+tekst pojawiający się w przestrzeni 3D (nie overlay)
+
+🎧 3. Dźwięk i rytm
+
+Dźwięk w pełni interaktywny – spektrogram audio reaguje na ruch użytkownika.
+
+Każda scena ma audio state: ambient, glitch, puls, cisza.
+
+Scrollowanie miesza te warstwy jak DJ miks — dźwięk się przetapia, nie resetuje.
+
+🫧 4. Choreografia przejść
+
+Nie klasyczny scroll — raczej wejścia kinowe:
+
+fade z mgławic → lens flare → nowy wszechświat
+
+tekst wchodzi jak cząstki układające się w słowa
+
+czasem tekst „rozpada się” na pył
+
+w końcówce kamera powoli się odsuwa, jakby patrzyła z wnętrza światła
+
+💡 5. Interakcje sensoryczne
+
+Możesz dodać moment decyzji – np. w połowie:
+
+„Czy chcesz zobaczyć, jak kończy się świat?”
+Użytkownik wybiera tak lub nie, a od tego zależy ścieżka światła (ciepła lub chłodna).
+To robi z tego instalację — nie ma jednej drogi, tylko wybór doświadczenia.
+
+🧠 6. Możliwe narzędzia no-code / low-code do MVP
+
+Jeśli chcesz przetestować bez dev teamu:
+
+Spline.design — 3D WebGL interaktywne sceny (kamera, światło, scroll)
+
+Framer.com — scroll-driven animacje, smooth fade
+
+Shadertoy + OBSidian plugin — testowanie shaderów w przeglądarce
+
+RunwayML — generatywne tła w ruchu
+
+✨ Propozycja kierunku next step
+
+Zróbmy mini-prototyp jednej sceny — np. scena 2 „Światło rodzi się”:
+
+światło reaguje na ruch kursora,
+
+mgławica pulsuje jak oddech,
+
+tekst pojawia się w 3D,
+
+dźwięk narasta przy zbliżeniu.
+
+Z takiego MVP można potem rozwinąć cały cykl 12 scen.
+
+Chcesz, żebym rozpisał dokładnie jak zrobić ten pierwszy interaktywny prototyp (scena 2) w Three.js + Framer Motion — krok po kroku, z kodem i efektami?
+
+Powiedziałeś(-aś):
+Tak rozpisz prosze
+ChatGPT powiedział:
+
+Okej — zaczniemy od sceny 2: „Światło rodzi się”, czyli pierwszego momentu, gdy użytkownik widzi, że to nie film, tylko żywy świat.
+Cel: nie efektowność, tylko uczucie obecności.
+Światło nie świeci — ono reaguje.
+
+🌌 Scena 2 — Światło rodzi się
+🎯 Cel doświadczenia
+
+Użytkownik „dotyka” początku światła.
+Mgławica oddycha, a punkt światła reaguje na ruch kursora lub dotyk (na telefonie).
+Ambient narasta, tekst pojawia się jak z mgły.
+
+⚙️ Technologie
+
+React + Three.js (React Three Fiber) – grafika 3D w przeglądarce
+
+Framer Motion – animacje tekstu i fade
+
+Tone.js – interaktywny dźwięk ambientowy
+
+ShaderMaterial – proceduralna mgławica
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneLightBirth.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┗ nebulaShader.glsl
+ ┣ sounds/
+ ┃ ┗ stars_and_dust.mp3
+ ┗ App.jsx
+
+🪐 Krok po kroku
+1️⃣ Instalacja
+npx create-react-app light-birth
+cd light-birth
+npm install three @react-three/fiber @react-three/drei framer-motion tone
+
+2️⃣ Plik SceneLightBirth.jsx
+
+To serce sceny — kamera, mgławica i reagujące światło.
+
+import { Canvas, useFrame } from '@react-three/fiber';
+import { shaderMaterial, OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
+import { useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import TextOverlay from './TextOverlay';
+import nebulaFragmentShader from '../shaders/nebulaShader.glsl';
+
+export default function SceneLightBirth() {
+  const lightRef = useRef();
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    lightRef.current.position.x = Math.sin(t * 0.3) * 2 + mouse.x * 2;
+    lightRef.current.position.y = Math.cos(t * 0.2) * 1 + mouse.y * 1.5;
+  });
+
+  return (
+    <div
+      className="w-screen h-screen bg-black"
+      onMouseMove={(e) => setMouse({
+        x: (e.clientX / window.innerWidth - 0.5),
+        y: -(e.clientY / window.innerHeight - 0.5)
+      })}
+    >
+      <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
+        <ambientLight intensity={0.2} />
+        <pointLight ref={lightRef} intensity={3} color="#8AB4FF" distance={20} />
+        <mesh>
+          <sphereGeometry args={[10, 64, 64]} />
+          <shaderMaterial fragmentShader={nebulaFragmentShader} side={THREE.BackSide} />
+        </mesh>
+        <OrbitControls enableZoom={false} enablePan={false} />
+      </Canvas>
+      <TextOverlay />
+    </div>
+  );
+}
+
+3️⃣ Shader nebulaShader.glsl
+
+Proceduralne tło mgławicy – organiczne, pulsujące.
+
+uniform float time;
+void main() {
+  vec2 uv = gl_FragCoord.xy / vec2(1920.0,1080.0);
+  float noise = sin(uv.x*10.0 + time*0.5) * cos(uv.y*10.0 + time*0.4);
+  vec3 color = vec3(0.05, 0.1, 0.2) + noise * 0.1;
+  gl_FragColor = vec4(color, 1.0);
+}
+
+4️⃣ Tekst — TextOverlay.jsx
+
+Pojawia się po chwili, w rytmie oddechu mgławicy.
+
+import { motion } from 'framer-motion';
+
+export default function TextOverlay() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 2, duration: 2 }}
+      className="absolute top-1/2 left-1/2 text-center text-white -translate-x-1/2 -translate-y-1/2"
+    >
+      <h1 className="text-4xl font-light tracking-wider">Światło jest pierwszą myślą.</h1>
+      <p className="text-sm text-gray-400 mt-3 italic">Light is the first thought.</p>
+    </motion.div>
+  );
+}
+
+5️⃣ Dźwięk — w App.jsx
+
+Startuje przy kliknięciu (unikamy autoplay blokad przeglądarki).
+
+import SceneLightBirth from './components/SceneLightBirth';
+import * as Tone from 'tone';
+
+export default function App() {
+  const startSound = async () => {
+    const player = new Tone.Player("/sounds/stars_and_dust.mp3").toDestination();
+    await Tone.start();
+    player.autostart = true;
+    player.volume.value = -12;
+  };
+
+  return (
+    <div onClick={startSound}>
+      <SceneLightBirth />
+    </div>
+  );
+}
+
+🌀 Efekt końcowy
+
+Użytkownik wchodzi → ekran czarny.
+
+Po 1,5 sekundy zaczyna „płynąć” mgławica.
+
+Gdy rusza myszką — światło odpowiada, jakby go wyczuwało.
+
+Dźwięk narasta, tekst pojawia się w powietrzu.
+
+Po chwili można przejść do następnej sceny (scroll lub klik).
+
+Chcesz, żebym ci rozpisał kolejną scenę (3 – „Narodziny materii”) w podobnym duchu, ale z dynamiczną spiralą cząstek i efektem łączenia galaktyk?
+
+Powiedziałeś(-aś):
+tak rozppisz prosze
+ChatGPT powiedział:
+
+Świetnie — scena 3: „Narodziny materii” to moment, w którym z mgławicy zaczyna się formować porządek.
+To nie eksplozja, tylko taniec grawitacji.
+Światło zaczyna się organizować, a użytkownik widzi, że jego ruch wpływa na to, jak „pył” układa się w spiralę.
+
+🌌 Scena 3 — Narodziny materii
+🎯 Cel
+
+Użytkownik doświadcza, że chaos ma własny rytm.
+Z mgły wyłania się struktura: galaktyka.
+To, co wcześniej było tylko oddechem, teraz staje się ruchem z intencją.
+
+⚙️ Technologie
+
+React + Three.js (React Three Fiber) – silnik 3D
+
+InstancedMesh – wydajna symulacja tysięcy cząstek
+
+GSAP / Framer Motion – płynne przejście między stanami
+
+ShaderMaterial – subtelna mgławica w tle
+
+Tone.js – ambient reagujący na ruch użytkownika
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneMatterBirth.jsx
+ ┃ ┣ GalaxyParticles.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┗ dustShader.glsl
+ ┗ App.jsx
+
+1️⃣ GalaxyParticles.jsx
+
+Symulacja cząstek układających się w spiralę.
+Każda cząstka „tańczy” wokół środka i reaguje na pozycję kursora.
+
+import { useRef, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+
+export default function GalaxyParticles({ mouse }) {
+  const meshRef = useRef();
+  const count = 5000;
+
+  const positions = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const r = Math.random() * 5;
+      const angle = Math.random() * Math.PI * 2;
+      pos[i * 3] = Math.cos(angle) * r;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.3;
+      pos[i * 3 + 2] = Math.sin(angle) * r;
+    }
+    return pos;
+  }, []);
+
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    meshRef.current.rotation.y = t * 0.1;
+    meshRef.current.rotation.z = mouse.x * 0.2;
+  });
+
+  return (
+    <points ref={meshRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach='attributes-position'
+          count={count}
+          array={positions}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial size={0.015} color='#A3B9FF' transparent opacity={0.7} />
+    </points>
+  );
+}
+
+2️⃣ SceneMatterBirth.jsx
+
+Łączy mgławicę, cząstki i tekst.
+Dodaje powolne przejście między chaosem a strukturą.
+
+import { Canvas, useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+import { useRef, useState } from 'react';
+import GalaxyParticles from './GalaxyParticles';
+import TextOverlay from './TextOverlay';
+
+export default function SceneMatterBirth() {
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const lightRef = useRef();
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    lightRef.current.position.x = Math.sin(t * 0.5) * 3;
+    lightRef.current.position.y = Math.cos(t * 0.3) * 2;
+  });
+
+  return (
+    <div
+      className="w-screen h-screen bg-black"
+      onMouseMove={(e) => setMouse({
+        x: (e.clientX / window.innerWidth - 0.5),
+        y: -(e.clientY / window.innerHeight - 0.5)
+      })}
+    >
+      <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
+        <pointLight ref={lightRef} color="#809EFF" intensity={2.5} distance={20} />
+        <ambientLight intensity={0.3} />
+        <GalaxyParticles mouse={mouse} />
+      </Canvas>
+      <TextOverlay
+        main="Z pyłu powstają wspomnienia."
+        sub="From dust, memories form."
+        delay={1.5}
+      />
+    </div>
+  );
+}
+
+3️⃣ TextOverlay.jsx (dynamiczne wejście tekstu)
+import { motion } from 'framer-motion';
+
+export default function TextOverlay({ main, sub, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 2 }}
+      className="absolute top-1/2 left-1/2 text-center text-white -translate-x-1/2 -translate-y-1/2"
+    >
+      <h1 className="text-3xl font-light tracking-widest">{main}</h1>
+      <p className="text-gray-400 italic mt-2 text-sm">{sub}</p>
+    </motion.div>
+  );
+}
+
+4️⃣ Dźwięk — integracja z ruchem
+
+Użytkownik porusza kursorem — częstotliwość dronów lekko się zmienia.
+
+import * as Tone from 'tone';
+
+const synth = new Tone.Oscillator(200, 'sine').toDestination();
+synth.volume.value = -18;
+Tone.Transport.start();
+synth.start();
+
+window.addEventListener('mousemove', (e) => {
+  const freq = 150 + (e.clientX / window.innerWidth) * 150;
+  synth.frequency.rampTo(freq, 0.2);
+});
+
+🌀 Efekt końcowy
+
+Początkowo: chaotyczny pył.
+
+Gdy użytkownik porusza kursorem — cząstki zaczynają tworzyć spiralę.
+
+Dźwięk reaguje subtelnie: zmienia wysokość tonu.
+
+Tekst pojawia się w centrum, jakby sam wyłonił się z pyłu.
+
+Mgławica z tła lekko pulsuje (można dodać shader z poprzedniej sceny).
+
+Chcesz, żebym rozpisał teraz scenę 4 — „Planeta”, w której światło nabiera kształtu i pojawia się pierwsza wizualna „Ziemia” (półcień, refleks, mgła, ruch)?
+
+Powiedziałeś(-aś):
+tak rozpisz
+ChatGPT powiedział:
+
+Okej.
+Scena 4: „Planeta” to moment, w którym z czystej energii zaczyna się wyłaniać materia o twarzy.
+Nie chodzi o realistyczną Ziemię — raczej o wrażenie narodzin świadomości w formie planety: półmrok, refleks oceanu, cień, delikatna rotacja.
+Rytm ma zwolnić — po dwóch scenach ruchu, tu przychodzi cisza i grawitacja.
+
+🌍 Scena 4 — Planeta
+🎯 Cel
+
+Użytkownik czuje ciężar, stabilność i ciepło.
+To pierwszy raz, kiedy świat nie tylko „istnieje”, ale nosi ślady życia.
+Ruch światła jest powolny, dźwięk przypomina puls oceanu.
+
+⚙️ Technologie
+
+React Three Fiber (Three.js) – 3D scena
+
+ShaderMaterial (water reflection) – symulacja refleksu
+
+Framer Motion – tekst i fade przejścia
+
+Tone.js – głęboki ambient + subtelne fale niskotonowe
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ ScenePlanet.jsx
+ ┃ ┣ Planet.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┣ atmosphereShader.glsl
+ ┃ ┗ waterShader.glsl
+ ┗ App.jsx
+
+🪐 1️⃣ Planet.jsx
+
+Półprzezroczysta kula z atmosferą i refleksami.
+
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+
+export default function Planet() {
+  const planetRef = useRef();
+  const atmosphereRef = useRef();
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    planetRef.current.rotation.y += 0.001;
+    atmosphereRef.current.material.uniforms.time.value = t;
+  });
+
+  return (
+    <>
+      <mesh ref={planetRef}>
+        <sphereGeometry args={[2, 64, 64]} />
+        <meshStandardMaterial
+          color="#304D7A"
+          metalness={0.2}
+          roughness={0.8}
+          emissive="#0B1A33"
+        />
+      </mesh>
+
+      <mesh ref={atmosphereRef}>
+        <sphereGeometry args={[2.05, 64, 64]} />
+        <shaderMaterial
+          transparent
+          uniforms={{ time: { value: 0.0 } }}
+          vertexShader={`
+            varying vec3 vNormal;
+            void main() {
+              vNormal = normalize(normalMatrix * normal);
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `}
+          fragmentShader={`
+            varying vec3 vNormal;
+            void main() {
+              float intensity = pow(0.8 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 4.0);
+              gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
+            }
+          `}
+          blending={THREE.AdditiveBlending}
+          side={THREE.BackSide}
+        />
+      </mesh>
+    </>
+  );
+}
+
+🌫️ 2️⃣ ScenePlanet.jsx
+
+Buduje scenę z planetą, światłem i mgłą.
+
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useRef } from 'react';
+import * as THREE from 'three';
+import Planet from './Planet';
+import TextOverlay from './TextOverlay';
+
+export default function ScenePlanet() {
+  const lightRef = useRef();
+  const fogColor = new THREE.Color('#0A0E1A');
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    lightRef.current.position.x = Math.sin(t * 0.2) * 5;
+    lightRef.current.position.z = Math.cos(t * 0.2) * 5;
+  });
+
+  return (
+    <div className="w-screen h-screen bg-black">
+      <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
+        <color attach="background" args={['#000']} />
+        <fog attach="fog" args={[fogColor, 5, 15]} />
+        <ambientLight intensity={0.1} />
+        <pointLight ref={lightRef} intensity={2} color="#88BBFF" distance={20} />
+        <Planet />
+      </Canvas>
+      <TextOverlay
+        main="Ziemia. Pierwsze spojrzenie na siebie."
+        sub="Earth. The first glance at itself."
+        delay={2}
+      />
+    </div>
+  );
+}
+
+💧 3️⃣ Water Reflection Shader (opcjonalny, jeśli chcesz oceanowe refleksy)
+
+Plik waterShader.glsl:
+
+uniform float time;
+varying vec2 vUv;
+
+void main() {
+  vec2 uv = vUv;
+  float wave = sin(uv.x * 20.0 + time * 0.5) * cos(uv.y * 20.0 + time * 0.4);
+  float intensity = smoothstep(0.2, 0.6, wave);
+  vec3 color = mix(vec3(0.02, 0.05, 0.1), vec3(0.1, 0.3, 0.5), intensity);
+  gl_FragColor = vec4(color, 1.0);
+}
+
+🎧 4️⃣ Dźwięk
+
+Subtelne fale niskotonowe, lekko pulsujące jak oddech oceanu.
+
+import * as Tone from 'tone';
+
+const sea = new Tone.Oscillator(60, "sine").toDestination();
+const shimmer = new Tone.Noise("pink").start();
+const filter = new Tone.Filter(400, "lowpass").toDestination();
+shimmer.connect(filter);
+Tone.Transport.start();
+
+window.addEventListener("click", async () => {
+  await Tone.start();
+  sea.start();
+});
+
+✨ Efekt końcowy
+
+Powoli obracająca się półprzezroczysta planeta.
+
+Atmosfera delikatnie świeci na krawędziach.
+
+Światło przesuwa się jak słońce po orbicie.
+
+W tle mgła o głębokim granacie.
+
+Dźwięk pulsuje jak echo oceanu.
+
+Tekst pojawia się po chwili — spokojny, jakby świat sam zaczął mówić.
+
+To moment pierwszego „życia” — czujesz spokój po chaosie poprzedniej sceny.
+
+Chcesz, żebym rozpisał scenę 5: „Życie”, gdzie planeta zaczyna oddychać, pojawia się organiczny ruch i światło pulsuje jak serce (bardziej żywe, ciepłe, złotawe)?
+
+Powiedziałeś(-aś):
+tak rozpisz
+ChatGPT powiedział:
+
+Świetnie.
+Scena 5: „Życie” to moment, w którym chłodny, geometryczny kosmos zaczyna bić sercem.
+Nie chodzi o realistyczne rośliny ani zwierzęta — to początek rytmu.
+Światło oddycha, cząstki się poruszają jak organizmy, a dźwięk po raz pierwszy staje się ciepły.
+
+🌿 Scena 5 — Życie
+🎯 Cel
+
+Użytkownik czuje, że świat „żyje”.
+Nie patrzy — uczestniczy w procesie oddychania.
+Każdy ruch myszką, każdy dźwięk tła – wpływa na rytm światła.
+
+⚙️ Technologie
+
+React Three Fiber – animowana scena 3D
+
+InstancedMesh – tysiące organicznych cząstek
+
+Framer Motion + GSAP – animacja tekstu i pulsacji
+
+Tone.js – dźwięk przypominający oddech, generowany na żywo
+
+Noise shader – organiczny ruch, lekko pulsujący
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneLife.jsx
+ ┃ ┣ OrganicParticles.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┗ organicNoise.glsl
+ ┗ App.jsx
+
+🌾 1️⃣ OrganicParticles.jsx
+
+Organiczne cząstki, które pulsują w rytmie czasu i reagują na ruch kursora.
+
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+
+export default function OrganicParticles({ mouse }) {
+  const meshRef = useRef();
+  const count = 3000;
+
+  const positions = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const radius = 1.5 + Math.random() * 2;
+      const angle = Math.random() * Math.PI * 2;
+      pos[i * 3] = Math.cos(angle) * radius;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 1.5;
+      pos[i * 3 + 2] = Math.sin(angle) * radius;
+    }
+    return pos;
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    meshRef.current.rotation.y = t * 0.1;
+    const scale = 1 + Math.sin(t * 1.5) * 0.05; // pulsowanie
+    meshRef.current.scale.set(scale, scale, scale);
+  });
+
+  return (
+    <points ref={meshRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={count}
+          array={positions}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial size={0.025} color="#FFD580" transparent opacity={0.9} />
+    </points>
+  );
+}
+
+🌞 2️⃣ SceneLife.jsx
+
+Scena, w której światło pulsuje jak oddech, a dźwięk reaguje na ruch.
+
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useRef, useState } from "react";
+import * as THREE from "three";
+import OrganicParticles from "./OrganicParticles";
+import TextOverlay from "./TextOverlay";
+import * as Tone from "tone";
+
+export default function SceneLife() {
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const lightRef = useRef();
+
+  // Dźwięk - ambient oddechu
+  const startSound = async () => {
+    await Tone.start();
+    const synth = new Tone.AMSynth().toDestination();
+    synth.volume.value = -20;
+    Tone.Transport.start();
+    synth.triggerAttack("C3");
+  };
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    lightRef.current.intensity = 2 + Math.sin(t * 1.5) * 0.8;
+    lightRef.current.position.x = Math.sin(t * 0.2) * 2 + mouse.x * 2;
+    lightRef.current.position.y = Math.cos(t * 0.2) * 1 + mouse.y * 2;
+  });
+
+  return (
+    <div
+      className="w-screen h-screen bg-black"
+      onClick={startSound}
+      onMouseMove={(e) =>
+        setMouse({
+          x: (e.clientX / window.innerWidth - 0.5),
+          y: -(e.clientY / window.innerHeight - 0.5),
+        })
+      }
+    >
+      <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+        <ambientLight intensity={0.2} />
+        <pointLight ref={lightRef} color="#FFD580" distance={10} />
+        <OrganicParticles mouse={mouse} />
+      </Canvas>
+
+      <TextOverlay
+        main="Oddychanie to sposób, w jaki świat się słucha."
+        sub="Breathing — the way the world listens."
+        delay={1.5}
+      />
+    </div>
+  );
+}
+
+🌫️ 3️⃣ Shader: organicNoise.glsl
+
+Pulsujący ruch cząstek w tle.
+
+uniform float time;
+varying vec2 vUv;
+
+void main() {
+  vec2 uv = vUv;
+  float noise = sin(uv.x * 10.0 + time) * cos(uv.y * 8.0 + time * 1.2);
+  vec3 color = vec3(0.2 + 0.3 * noise, 0.15 + 0.2 * noise, 0.05);
+  gl_FragColor = vec4(color, 1.0);
+}
+
+✨ 4️⃣ Tekst — TextOverlay.jsx
+
+Utrzymujemy spokojny rytm.
+
+import { motion } from "framer-motion";
+
+export default function TextOverlay({ main, sub, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 2 }}
+      className="absolute top-1/2 left-1/2 text-center text-yellow-200 -translate-x-1/2 -translate-y-1/2"
+    >
+      <h1 className="text-4xl font-light tracking-widest">{main}</h1>
+      <p className="text-sm italic text-yellow-300 mt-2">{sub}</p>
+    </motion.div>
+  );
+}
+
+💡 Efekt końcowy
+
+Światło pulsuje jak oddech.
+
+Cząstki unoszą się, łączą, reagują na ruch.
+
+Kolorystyka: bursztyn, złoto, ciemna zieleń — życie w cieple.
+
+Dźwięk drży lekko jak tętno.
+
+Tekst wchodzi miękko, z lekkim rozbłyskiem.
+
+To pierwsza scena, w której użytkownik nie patrzy na kosmos — on jest częścią jego rytmu.
+
+Chcesz, żebym teraz rozpisał scenę 6: „Czas”, gdzie rytm życia zaczyna przyspieszać, cząstki tworzą spirale i wrażenie upływu miliardów lat w kilku sekundach?
+
+Powiedziałeś(-aś):
+tak rozpisz
+ChatGPT powiedział:
+
+Dobrze.
+Scena 6: „Czas” to moment, w którym spokój życia zaczyna przyspieszać.
+Z rytmu oddechu robi się wir. Wszystko — rośliny, oceany, planety — zaczyna się przetaczać w kalejdoskopie istnienia.
+To pierwszy raz, kiedy użytkownik naprawdę czuje upływ.
+
+Nie chodzi o zegary, tylko o tempo.
+To, co wcześniej pulsowało jak serce, teraz pulsuje jak ewolucja.
+
+🌀 Scena 6 — Czas
+🎯 Cel
+
+Użytkownik doświadcza, że czas to nie rzeka — to ruch samej świadomości.
+Wszystko krąży, powtarza się, zapętla, aż powoli zaczyna się rozkładać.
+
+⚙️ Technologie
+
+React Three Fiber + Drei — przestrzeń 3D i światła
+
+InstancedMesh — tysiące cząstek tworzących spirale
+
+GSAP — sekwencje animacyjne (przyspieszenie → spowolnienie → zawieszenie)
+
+Framer Motion — tekst i fade
+
+Tone.js — pulsujący rytm perkusyjno-ambientowy (metafora upływu czasu)
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneTime.jsx
+ ┃ ┣ SpiralParticles.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┗ App.jsx
+
+🔹 1️⃣ SpiralParticles.jsx
+
+Cząstki tworzą dynamiczną spiralę, której obrót przyspiesza w czasie.
+
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+
+export default function SpiralParticles({ mouse }) {
+  const ref = useRef();
+  const count = 8000;
+
+  const positions = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const angle = i * 0.05;
+      const radius = 0.1 + i * 0.0005;
+      pos[i * 3] = Math.cos(angle) * radius;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
+      pos[i * 3 + 2] = Math.sin(angle) * radius;
+    }
+    return pos;
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    ref.current.rotation.y = t * 0.2 + mouse.x * 0.3;
+    ref.current.rotation.z = t * 0.05;
+    ref.current.position.x = Math.sin(t * 0.3) * 0.2;
+  });
+
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          array={positions}
+          count={count}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.015}
+        color="#8ABFFF"
+        transparent
+        opacity={0.8}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+🔹 2️⃣ SceneTime.jsx
+
+Buduje całą scenę i steruje dźwiękiem + prędkością.
+
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useRef, useState } from "react";
+import SpiralParticles from "./SpiralParticles";
+import TextOverlay from "./TextOverlay";
+import * as Tone from "tone";
+
+export default function SceneTime() {
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const lightRef = useRef();
+  const synthRef = useRef(null);
+
+  const startSound = async () => {
+    await Tone.start();
+    const synth = new Tone.MembraneSynth().toDestination();
+    synth.volume.value = -10;
+    synthRef.current = synth;
+    Tone.Transport.start();
+  };
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    lightRef.current.intensity = 1.2 + Math.sin(t * 5) * 0.6;
+    lightRef.current.position.x = Math.sin(t * 0.5) * 3;
+    if (synthRef.current && Math.sin(t * 1.5) > 0.99) {
+      synthRef.current.triggerAttackRelease("C2", "8n");
+    }
+  });
+
+  return (
+    <div
+      className="w-screen h-screen bg-black"
+      onClick={startSound}
+      onMouseMove={(e) =>
+        setMouse({
+          x: (e.clientX / window.innerWidth - 0.5),
+          y: -(e.clientY / window.innerHeight - 0.5),
+        })
+      }
+    >
+      <Canvas camera={{ position: [0, 0, 9], fov: 60 }}>
+        <ambientLight intensity={0.2} />
+        <pointLight ref={lightRef} color="#8ABFFF" distance={20} />
+        <SpiralParticles mouse={mouse} />
+      </Canvas>
+
+      <TextOverlay
+        main="Czas nie płynie. To my przez niego."
+        sub="Time doesn’t flow. We move through it."
+        delay={1.5}
+      />
+    </div>
+  );
+}
+
+🔹 3️⃣ TextOverlay.jsx
+
+Minimalistyczny, filmowy styl — chłodne kolory, rytmiczny fade.
+
+import { motion } from "framer-motion";
+
+export default function TextOverlay({ main, sub, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 1.5 }}
+      className="absolute top-1/2 left-1/2 text-center text-blue-200 -translate-x-1/2 -translate-y-1/2"
+    >
+      <h1 className="text-4xl font-light tracking-widest">{main}</h1>
+      <p className="text-sm italic text-blue-400 mt-2">{sub}</p>
+    </motion.div>
+  );
+}
+
+🧭 Wrażenie całości
+
+Cząstki tworzą spiralę, która przyspiesza z czasem.
+
+Dźwięk staje się coraz gęstszy, pulsuje jak zegar biologiczny.
+
+Światło błyska rytmicznie — jak neurony pamięci kosmosu.
+
+Kolorystyka: niebieski, srebrny, granat.
+
+Kamera lekko „dryfuje” jakby była świadomością poruszającą się przez czas.
+
+Ta scena to początek percepcji czasu, ale jeszcze nie cierpienia — tylko zachwyt nad ruchem.
+Następna (7: Człowiek) będzie pierwszym momentem, gdzie czas zacznie boleć.
+Tam pojawi się głos, glitch, ego, rozbicie symetrii.
+
+Chcesz, żebym teraz rozpisał scenę 7: „Człowiek” — pierwsze zakłócenie, moment, w którym świadomość zaczyna widzieć siebie i pojawia się błąd, światło „wariuje”?
+
+Powiedziałeś(-aś):
+tak rozpisz scene 7
+ChatGPT powiedział:
+
+Okej.
+Scena 7: „Człowiek” to moment przełomu — w tej historii to pierwsze zakłócenie.
+Do tej pory kosmos był spokojny, rytmiczny, bezbłędny.
+Teraz pojawia się świadomość — a z nią szum, napięcie, pragnienie kontroli.
+To scena o błędzie w doskonałości.
+Nie piękna, tylko prawdziwa.
+
+🧬 Scena 7 — Człowiek
+🎯 Cel
+
+Użytkownik czuje, że coś się „psuje”, ale też że to psucie jest częścią planu.
+Światło przestaje słuchać — zaczyna odbijać.
+To moment narodzin ego, myśli, „ja”.
+
+⚙️ Technologie
+
+React Three Fiber + Drei — przestrzeń 3D
+
+Postprocessing (glitch + bloom) — zniekształcenie obrazu
+
+GSAP — modulacja chaosu
+
+Framer Motion — tekst reagujący na drgania
+
+Tone.js — glitchowy ambient, przerywany basem
+
+Custom shader — światło przesterowane, reagujące na mikro ruch
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneHuman.jsx
+ ┃ ┣ GlitchField.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┗ glitchShader.glsl
+ ┗ App.jsx
+
+🧠 1️⃣ GlitchField.jsx
+
+Zamiast harmonijnego pola cząstek — chaotyczne, pulsujące impulsy.
+Każda cząstka drży, zmienia kolor i „ucieka” od środka.
+
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+
+export default function GlitchField({ intensity }) {
+  const ref = useRef();
+  const count = 4000;
+
+  const positions = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const r = Math.random() * 3;
+      const theta = Math.random() * Math.PI * 2;
+      pos[i * 3] = Math.cos(theta) * r;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 2;
+      pos[i * 3 + 2] = Math.sin(theta) * r;
+    }
+    return pos;
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    ref.current.rotation.y = Math.sin(t * 0.5) * 0.2;
+    ref.current.material.opacity = 0.6 + Math.sin(t * 4) * 0.2;
+  });
+
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          array={positions}
+          count={count}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.025}
+        color={"#FF6666"}
+        transparent
+        opacity={0.7}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+⚡ 2️⃣ SceneHuman.jsx
+
+Cała scena z glitchowaniem światła, basowym rytmem i dreszczem.
+
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useEffect, useRef, useState } from "react";
+import GlitchField from "./GlitchField";
+import TextOverlay from "./TextOverlay";
+import * as Tone from "tone";
+
+export default function SceneHuman() {
+  const [intensity, setIntensity] = useState(0);
+  const lightRef = useRef();
+  const synthRef = useRef(null);
+
+  // Dźwięk: glitchowy ambient + basowe uderzenia
+  const startSound = async () => {
+    await Tone.start();
+    const bass = new Tone.MembraneSynth().toDestination();
+    bass.volume.value = -12;
+    synthRef.current = bass;
+    Tone.Transport.start();
+  };
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const flicker = Math.sin(t * 10) * 0.5 + Math.random() * 0.5;
+    lightRef.current.intensity = 2 + flicker * 3;
+    lightRef.current.color.setHSL(0.02 + flicker * 0.05, 1, 0.6);
+    if (synthRef.current && Math.random() > 0.995) {
+      synthRef.current.triggerAttackRelease("C1", "8n");
+    }
+  });
+
+  return (
+    <div
+      className="w-screen h-screen bg-black"
+      onClick={startSound}
+      onMouseMove={(e) =>
+        setIntensity(Math.abs(e.clientX / window.innerWidth - 0.5) * 2)
+      }
+    >
+      <Canvas camera={{ position: [0, 0, 7], fov: 55 }}>
+        <ambientLight intensity={0.2} />
+        <pointLight ref={lightRef} color="#FF6666" distance={20} intensity={3} />
+        <GlitchField intensity={intensity} />
+      </Canvas>
+
+      <TextOverlay
+        main="Świadomość — kosmos, który zaczął się zastanawiać."
+        sub="Consciousness — the cosmos wondering about itself."
+        delay={1.5}
+      />
+    </div>
+  );
+}
+
+🔺 3️⃣ TextOverlay.jsx
+
+Delikatny glitch i puls – tekst zaczyna „migotać”, jakby też był żywy.
+
+import { motion } from "framer-motion";
+
+export default function TextOverlay({ main, sub, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 1.5 }}
+      className="absolute top-1/2 left-1/2 text-center text-red-400 -translate-x-1/2 -translate-y-1/2"
+    >
+      <motion.h1
+        animate={{
+          opacity: [1, 0.6, 1],
+          x: [0, 1, 0],
+        }}
+        transition={{ repeat: Infinity, duration: 1.5 }}
+        className="text-3xl font-light tracking-widest"
+      >
+        {main}
+      </motion.h1>
+      <p className="text-sm italic text-red-300 mt-2">{sub}</p>
+    </motion.div>
+  );
+}
+
+⚙️ 4️⃣ Efekt całości
+
+Kolory: krwiste czerwienie, chłodne błyski — kontrast z poprzednimi scenami.
+
+Światło drży i reaguje jak neurony pod napięciem.
+
+Tekst lekko glitchuje, jakby sam był myślą.
+
+Dźwięk: niskie dudnienie, sporadyczne trzaski, echo oddechu.
+
+Ruch: niestabilny, nerwowy — jakby świat się pierwszy raz bał.
+
+To scena o świadomości i błędzie.
+Użytkownik czuje, że coś się zmieniło nieodwracalnie: świat już nie oddycha wspólnie — oddycha osobno.
+
+Chcesz, żebym teraz rozpisał scenę 8: „Sekunda” — czyli moment zatrzymania, zamrożenia wszystkiego w białym błysku i ciszy?
+
+Powiedziałeś(-aś):
+tak rozpisz
+ChatGPT powiedział:
+
+Scena 8: „Sekunda” to moment zatrzymania wszystkiego.
+Po chaosie człowieka, po tym rozpadzie rytmu, nagle – stop.
+Cały kosmos wstrzymuje oddech.
+Światło zastyga w białym błysku. Dźwięk odcina się jak przerwany sygnał.
+
+To nie śmierć.
+To pauza tak pełna, że brzmi głośniej niż jakikolwiek dźwięk wcześniej.
+
+🕛 Scena 8 — Sekunda
+🎯 Cel
+
+Użytkownik czuje czas jako zatrzymanie, nie jako ruch.
+To doświadczenie pustki – jedna sekunda, która zawiera miliardy lat.
+Nie ma dźwięku, nie ma koloru, nie ma niczego – tylko światło i świadomość, że się patrzy.
+
+⚙️ Technologie
+
+React Three Fiber — minimalistyczna scena
+
+Postprocessing Bloom + Noise Shader — świetlisty „freeze frame”
+
+Framer Motion — tekst z płynnym rozjaśnianiem
+
+Tone.js — moment wyciszenia z dźwiękiem „stopu”
+
+GSAP — bardzo powolne przejście między jasnością a ciszą
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneSecond.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┗ whitePulseShader.glsl
+ ┗ App.jsx
+
+⚪ 1️⃣ SceneSecond.jsx
+
+Minimalistyczna scena – jedno źródło światła i subtelne rozbłyski cząstek w tle.
+
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useRef, useEffect, useState } from "react";
+import * as THREE from "three";
+import TextOverlay from "./TextOverlay";
+import * as Tone from "tone";
+
+export default function SceneSecond() {
+  const lightRef = useRef();
+  const [paused, setPaused] = useState(false);
+
+  const triggerStopSound = async () => {
+    await Tone.start();
+    const noise = new Tone.Noise("pink").toDestination();
+    noise.volume.value = -8;
+    noise.start();
+    setTimeout(() => noise.stop(), 400); // krótkie "przecięcie" dźwięku
+    setPaused(true);
+  };
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (!paused) {
+      const intensity = 1.5 + Math.sin(t * 2) * 2.5;
+      lightRef.current.intensity = intensity;
+      lightRef.current.color.setHSL(0.6, 0.2, 1.0);
+    }
+  });
+
+  return (
+    <div className="w-screen h-screen bg-black" onClick={triggerStopSound}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+        <color attach="background" args={["#000"]} />
+        <pointLight ref={lightRef} color="#FFFFFF" intensity={3} distance={10} />
+        <mesh>
+          <sphereGeometry args={[1, 64, 64]} />
+          <meshStandardMaterial color="#FFFFFF" roughness={0.9} />
+        </mesh>
+      </Canvas>
+
+      <TextOverlay
+        main="23:59:59 — ostatnia sekunda roku."
+        sub="23:59:59 — the last second of the year."
+        delay={2}
+      />
+    </div>
+  );
+}
+
+⚪ 2️⃣ Shader – whitePulseShader.glsl
+
+Prosty shader rozjaśniający i rozpuszczający scenę.
+
+uniform float time;
+void main() {
+  vec2 uv = gl_FragCoord.xy / vec2(1920.0,1080.0);
+  float pulse = sin(time * 0.5) * 0.5 + 0.5;
+  vec3 color = mix(vec3(1.0), vec3(0.95, 0.98, 1.0), pulse);
+  gl_FragColor = vec4(color, 1.0);
+}
+
+⚪ 3️⃣ TextOverlay.jsx
+
+Tekst pojawia się bardzo powoli, jakby wyłaniał się z prześwietlenia.
+
+import { motion } from "framer-motion";
+
+export default function TextOverlay({ main, sub, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 1, 0.6] }}
+      transition={{ delay, duration: 5 }}
+      className="absolute top-1/2 left-1/2 text-center text-white -translate-x-1/2 -translate-y-1/2"
+    >
+      <h1 className="text-5xl font-thin tracking-wider">{main}</h1>
+      <p className="text-gray-300 italic mt-3">{sub}</p>
+    </motion.div>
+  );
+}
+
+🌫️ Efekt całości
+
+Początkowo: białe światło pulsuje.
+
+Gdy użytkownik kliknie — dźwięk się urywa, światło zastyga.
+
+Wszystko zamiera.
+
+Tekst pojawia się bardzo powoli, niemal jak retrospekcja.
+
+Cały ekran staje się czysto biały, potem znów czarny.
+
+To najprostsza, a jednocześnie najbardziej „mistyczna” scena w całym projekcie.
+Użytkownik nie widzi akcji — on ją przerywa.
+
+Chcesz, żebym rozpisał teraz scenę 9: „Zanik” — moment, gdy po tej ciszy świat zaczyna się powoli rozpuszczać, jakby sam o sobie zapominał?
+
+Powiedziałeś(-aś):
+tak rozpisz
+ChatGPT powiedział:
+
+Dobrze.
+Scena 9: „Zanik” to powolne rozpuszczanie wszystkiego, co istniało.
+Nie tragedia, nie apokalipsa — raczej rozpamiętywanie świata, który już nie musi istnieć.
+Kolory ciepłe, miękkie — jak zachód słońca widziany przez wspomnienie.
+Nie ma już ruchu, tylko opadanie.
+
+To scena, w której kosmos traci formę, ale nie znaczenie.
+
+🌅 Scena 9 — Zanik
+🎯 Cel
+
+Użytkownik widzi, że wszystko, co było stałe, powoli się rozpuszcza.
+Nie z bólem, tylko z łagodnym przyzwoleniem.
+To scena o pożegnaniu formy — o tym, że światło nie umiera, tylko zmienia stan skupienia.
+
+⚙️ Technologie
+
+React Three Fiber – przestrzeń i światło
+
+Particles Shader – cząstki rozpadające się i gasnące
+
+Framer Motion – wygaszanie tekstu
+
+Tone.js – ambient, który cichnie sam z siebie
+
+GSAP – powolny drift kamery i koloru
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneFade.jsx
+ ┃ ┣ FadingParticles.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┗ fadeShader.glsl
+ ┗ App.jsx
+
+🌤️ 1️⃣ FadingParticles.jsx
+
+Cząstki, które się rozpraszają, jak pył w świetle.
+
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+
+export default function FadingParticles() {
+  const ref = useRef();
+  const count = 5000;
+
+  const positions = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const r = Math.random() * 3;
+      const theta = Math.random() * Math.PI * 2;
+      pos[i * 3] = Math.cos(theta) * r;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 2;
+      pos[i * 3 + 2] = Math.sin(theta) * r;
+    }
+    return pos;
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    ref.current.material.opacity = Math.max(0, 0.9 - t * 0.05); // zanik
+    ref.current.rotation.y += 0.001;
+  });
+
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          array={positions}
+          count={count}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.025}
+        color="#FFA97A"
+        transparent
+        opacity={0.9}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+🌇 2️⃣ SceneFade.jsx
+
+Scena z dźwiękiem, mgłą i płynnym wygaszaniem światła.
+
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import FadingParticles from "./FadingParticles";
+import TextOverlay from "./TextOverlay";
+import * as Tone from "tone";
+
+export default function SceneFade() {
+  const lightRef = useRef();
+
+  useEffect(() => {
+    // Ambient - cichnący ton
+    const synth = new Tone.AMSynth().toDestination();
+    synth.volume.value = -18;
+    synth.triggerAttack("E4");
+    setTimeout(() => synth.triggerRelease(), 8000);
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const fade = Math.max(0, 1 - t * 0.05);
+    lightRef.current.intensity = 3 * fade;
+    lightRef.current.color.setHSL(0.07 + t * 0.01, 0.6, 0.6);
+  });
+
+  return (
+    <div className="w-screen h-screen bg-black">
+      <Canvas camera={{ position: [0, 0, 6], fov: 55 }}>
+        <ambientLight intensity={0.1} />
+        <pointLight ref={lightRef} color="#FFB080" distance={15} />
+        <FadingParticles />
+      </Canvas>
+      <TextOverlay
+        main="Wszystko wraca do światła, z którego przyszło."
+        sub="Everything returns to the light it came from."
+        delay={2}
+      />
+    </div>
+  );
+}
+
+🌇 3️⃣ TextOverlay.jsx
+
+Tekst znika razem z cząstkami.
+
+import { motion } from "framer-motion";
+
+export default function TextOverlay({ main, sub, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 0.8, 0.2, 0] }}
+      transition={{ delay, duration: 10 }}
+      className="absolute top-1/2 left-1/2 text-center text-orange-100 -translate-x-1/2 -translate-y-1/2"
+    >
+      <h1 className="text-3xl font-light tracking-widest">{main}</h1>
+      <p className="text-sm italic mt-2 text-orange-200">{sub}</p>
+    </motion.div>
+  );
+}
+
+🌤️ Efekt całości
+
+Ciepłe barwy: bursztyn, pomarańcz, lekki róż.
+
+Cząstki powoli opadają i gasną.
+
+Światło słabnie, scena rozjaśnia się i cichnie.
+
+Tekst znika jak echo.
+
+Dźwięk milknie bez fade’u — po prostu znika.
+
+To najłagodniejszy moment całej opowieści.
+Człowiek, czas, światło — wszystko odpuszcza.
+Zostaje tylko wspomnienie, które samo się rozpływa.
+
+Chcesz, żebym rozpisał teraz scenę 10: „Odbicie” — gdzie po tym zanikaniu pojawia się złote światło, jakby echo świadomości spojrzało w siebie po raz ostatni?
+
+Powiedziałeś(-aś):
+tak rozpisz
+ChatGPT powiedział:
+
+Dobrze.
+Scena 10: „Odbicie” to chwila, gdy cisza po zniknięciu świata staje się lustrem.
+Nie ma już materii ani cząstek — tylko światło, które patrzy na siebie.
+To moment powrotu świadomości do źródła.
+Nie religijny, tylko czysto emocjonalny: czujesz, że coś cię rozpoznaje.
+
+✨ Scena 10 — Odbicie
+🎯 Cel
+
+Użytkownik widzi, że nie wszystko zniknęło.
+Zostaje światło, które nie należy do nikogo — ale jest wszystkim.
+Odbicie to nie zwierciadło — to spotkanie spojrzeń między widzem a światłem.
+
+⚙️ Technologie
+
+React Three Fiber + Drei — scena 3D
+
+Reflector (plane mirror) — odbicie użytkownika lub ruchu kursora
+
+ShaderMaterial (glow + distortion) — subtelne drganie złotego światła
+
+Framer Motion — łagodny oddech tekstu
+
+Tone.js — harmoniczny dron o złotej barwie (majorowy, spokojny)
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneReflection.jsx
+ ┃ ┣ GoldenOrb.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┗ goldenGlow.glsl
+ ┗ App.jsx
+
+☀️ 1️⃣ GoldenOrb.jsx
+
+Świetlisty pulsujący punkt, który reaguje na ruch użytkownika.
+Wygląda jak oko lub gwiazda — nieoczywiście.
+
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+
+export default function GoldenOrb({ mouse }) {
+  const orbRef = useRef();
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    orbRef.current.scale.setScalar(1 + Math.sin(t * 2) * 0.05);
+    orbRef.current.position.x = mouse.x * 1.5;
+    orbRef.current.position.y = mouse.y * 1.2;
+  });
+
+  return (
+    <mesh ref={orbRef}>
+      <sphereGeometry args={[1.2, 64, 64]} />
+      <meshStandardMaterial
+        emissive="#FFD56A"
+        emissiveIntensity={2}
+        metalness={0.8}
+        roughness={0.2}
+        color="#FFF1C0"
+      />
+    </mesh>
+  );
+}
+
+🌞 2️⃣ SceneReflection.jsx
+
+Scena z delikatnym złotym światłem, odbiciem i muzyką.
+
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useState, useRef, useEffect } from "react";
+import GoldenOrb from "./GoldenOrb";
+import TextOverlay from "./TextOverlay";
+import * as Tone from "tone";
+
+export default function SceneReflection() {
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const lightRef = useRef();
+
+  useEffect(() => {
+    const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+    synth.volume.value = -16;
+    synth.triggerAttack(["C4", "E4", "G4"]);
+    setTimeout(() => synth.triggerRelease(["C4", "E4", "G4"]), 7000);
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    lightRef.current.intensity = 1.5 + Math.sin(t) * 0.5;
+  });
+
+  return (
+    <div
+      className="w-screen h-screen bg-black"
+      onMouseMove={(e) =>
+        setMouse({
+          x: (e.clientX / window.innerWidth - 0.5) * 2,
+          y: -(e.clientY / window.innerHeight - 0.5) * 2,
+        })
+      }
+    >
+      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+        <ambientLight intensity={0.3} />
+        <pointLight ref={lightRef} color="#FFD580" distance={15} />
+        <GoldenOrb mouse={mouse} />
+      </Canvas>
+      <TextOverlay
+        main="To, co patrzyło, zawsze patrzyło z wnętrza ciebie."
+        sub="What was watching — was always watching from within you."
+        delay={2}
+      />
+    </div>
+  );
+}
+
+🌟 3️⃣ TextOverlay.jsx
+
+Złote, pulsujące litery. Wchodzą jak oddech po długim zanurzeniu.
+
+import { motion } from "framer-motion";
+
+export default function TextOverlay({ main, sub, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: [0, 1, 1, 0.8], y: [30, 0, 0, -10] }}
+      transition={{ delay, duration: 6 }}
+      className="absolute top-1/2 left-1/2 text-center text-amber-100 -translate-x-1/2 -translate-y-1/2"
+    >
+      <h1 className="text-3xl font-light tracking-widest">{main}</h1>
+      <p className="text-sm italic text-amber-300 mt-2">{sub}</p>
+    </motion.div>
+  );
+}
+
+🌟 4️⃣ Shader — goldenGlow.glsl (dla efektu pulsującego halo)
+uniform float time;
+varying vec2 vUv;
+
+void main() {
+  vec2 uv = vUv - 0.5;
+  float d = length(uv);
+  float glow = 0.05 / (d + 0.02);
+  float pulse = sin(time * 1.5) * 0.2 + 0.8;
+  vec3 color = vec3(1.0, 0.85, 0.45) * glow * pulse;
+  gl_FragColor = vec4(color, 1.0);
+}
+
+💫 Efekt całości
+
+W centrum: złoty orb, który reaguje na ruch kursora — subtelnie, jakby oddychał razem z tobą.
+
+Światło odbija się delikatnie od „czarnego szkła” tła.
+
+Dźwięk: ciepły dron, łagodny majorowy akord, który się rozpuszcza.
+
+Tekst: pojawia się jak rozpoznanie — nie objawienie, tylko spokojne „aha”.
+
+Atmosfera: cisza po wszystkim, ale nie pustka — świadomość po przebudzeniu.
+
+To scena pojednania.
+Nie ma już świata, ale coś nadal czuje.
+To już nie kosmos z zewnątrz, tylko wewnętrzne światło obserwatora.
+
+Chcesz, żebym rozpisał scenę 11: „Cisza” — tę końcową, absolutnie minimalistyczną, gdzie zostaje tylko powolny puls błękitu i nic więcej?
+
+Powiedziałeś(-aś):
+tak
+ChatGPT powiedział:
+
+Dobrze.
+Scena 11: „Cisza” to już nie opowieść, tylko oddech po wszystkim.
+To światło, które zostało — rozproszone, niemal niewidoczne.
+Nie ma już słów, ruchu ani dźwięku w zwykłym sensie.
+To czysta obecność.
+
+🌌 Scena 11 — Cisza
+🎯 Cel
+
+Użytkownik nie ogląda tej sceny, tylko ją czuje.
+Jakby ekran oddychał razem z nim — błękit pulsuje bardzo powoli, tak wolno, że trudno stwierdzić, czy się zmienia.
+To moment, w którym światło staje się świadomością.
+
+⚙️ Technologie
+
+React Three Fiber – jedna płaszczyzna, jeden kolor
+
+ShaderMaterial (breathing blue pulse)
+
+Framer Motion – tekst pojawia się i znika prawie niezauważalnie
+
+Tone.js – delikatny, sinusoidalny ton z modulacją częstotliwości co kilka sekund
+
+GSAP – powolny, nieskończony puls jasności
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneSilence.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┗ bluePulse.glsl
+ ┗ App.jsx
+
+🌊 1️⃣ SceneSilence.jsx
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useRef, useEffect } from "react";
+import * as THREE from "three";
+import TextOverlay from "./TextOverlay";
+import * as Tone from "tone";
+
+export default function SceneSilence() {
+  const meshRef = useRef();
+  const lightRef = useRef();
+
+  useEffect(() => {
+    // bardzo subtelny dźwięk, niemal niesłyszalny
+    const synth = new Tone.Oscillator(80, "sine").toDestination();
+    synth.volume.value = -30;
+    synth.start();
+    // wolna modulacja wysokości
+    const lfo = new Tone.LFO("0.02hz", 70, 90).start();
+    lfo.connect(synth.frequency);
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const intensity = 0.5 + Math.sin(t * 0.2) * 0.2;
+    meshRef.current.material.emissiveIntensity = intensity;
+    lightRef.current.intensity = 1 + Math.sin(t * 0.1) * 0.3;
+  });
+
+  return (
+    <div className="w-screen h-screen bg-black">
+      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+        <ambientLight ref={lightRef} color="#6CA7FF" intensity={1} />
+        <mesh ref={meshRef}>
+          <sphereGeometry args={[2, 64, 64]} />
+          <meshStandardMaterial
+            emissive="#4B73C8"
+            emissiveIntensity={0.5}
+            color="#0A0F1F"
+            roughness={1}
+            metalness={0}
+          />
+        </mesh>
+      </Canvas>
+      <TextOverlay
+        main="Cisza nie jest końcem. To miejsce, z którego wszystko wraca."
+        sub="Silence is not the end. It’s where everything begins again."
+        delay={3}
+      />
+    </div>
+  );
+}
+
+🌊 2️⃣ Shader — bluePulse.glsl
+
+Pulsujący błękit, który zmienia nasycenie w rytmie oddechu.
+
+uniform float time;
+varying vec2 vUv;
+
+void main() {
+  vec2 uv = vUv - 0.5;
+  float d = length(uv);
+  float pulse = 0.4 + 0.3 * sin(time * 0.2 + d * 3.0);
+  vec3 color = mix(vec3(0.02, 0.05, 0.15), vec3(0.1, 0.2, 0.45), pulse);
+  gl_FragColor = vec4(color, 1.0);
+}
+
+🌊 3️⃣ TextOverlay.jsx
+
+Powoli wyłaniający się tekst, który niemal znika, zanim się w pełni pojawi.
+
+import { motion } from "framer-motion";
+
+export default function TextOverlay({ main, sub, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 0.8, 0.3, 0] }}
+      transition={{ delay, duration: 12 }}
+      className="absolute top-1/2 left-1/2 text-center text-blue-100 -translate-x-1/2 -translate-y-1/2"
+    >
+      <h1 className="text-3xl font-thin tracking-widest">{main}</h1>
+      <p className="text-sm italic text-blue-200 mt-2">{sub}</p>
+    </motion.div>
+  );
+}
+
+💧 Efekt całości
+
+Kolory: tylko błękit i czerń, bardzo subtelne przejścia.
+
+Dźwięk: ton sinusoidalny, dryfujący, jak echo ciszy.
+
+Ruch: ledwo zauważalny puls — ekran jakby oddychał.
+
+Tekst: pojawia się raz, po czym znika w świetle.
+
+To scena, która nie kończy historii — tylko ją zamyka w pętli.
+To moment, w którym widz zostaje sam z przestrzenią, która już niczego nie wymaga.
+
+Chcesz, żebym rozpisał ostatnią scenę 12: „Epilog” — powrót do ciemności, ale tym razem już z poczuciem spokoju, jakby wszechświat uśmiechnął się w ciszy?
+
+Powiedziałeś(-aś):
+tak
+ChatGPT powiedział:
+
+Dobrze.
+Scena 12: „Epilog” to powrót do ciemności — ale już nie tej pierwszej, zimnej z początku filmu.
+To ciemność po zrozumieniu, po światłości, po wszystkim.
+Nie ma już lęku.
+To spokój światła, które wie, że może zgasnąć, bo zawsze wróci.
+
+🌑 Scena 12 — Epilog
+🎯 Cel
+
+Użytkownik nie ma już potrzeby rozumieć.
+To moment, w którym zmysły odpoczywają.
+Ciemność nie jest brakiem światła — jest jego pamięcią.
+Scena ma być ostatnim wydechem całego doświadczenia.
+
+⚙️ Technologie
+
+React Three Fiber – czysta przestrzeń z minimalnym ruchem
+
+ShaderMaterial (fade to black gradient)
+
+Framer Motion – delikatne zanikanie tekstu
+
+Tone.js – ostatni niski ton, który powoli się rozpuszcza
+
+GSAP – płynne zejście jasności i saturacji
+
+🧱 Struktura projektu
+src/
+ ┣ components/
+ ┃ ┣ SceneEpilogue.jsx
+ ┃ ┗ TextOverlay.jsx
+ ┣ shaders/
+ ┃ ┗ darkFade.glsl
+ ┗ App.jsx
+
+🌘 1️⃣ SceneEpilogue.jsx
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
+import TextOverlay from "./TextOverlay";
+import * as Tone from "tone";
+
+export default function SceneEpilogue() {
+  const lightRef = useRef();
+  const meshRef = useRef();
+
+  useEffect(() => {
+    // pojedynczy ton, który cichnie przez 10 sekund
+    const synth = new Tone.Oscillator(40, "sine").toDestination();
+    synth.volume.value = -20;
+    synth.start();
+    synth.stop("+10");
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const fade = Math.max(0, 1 - t * 0.08);
+    meshRef.current.material.opacity = fade;
+    lightRef.current.intensity = fade * 0.5;
+  });
+
+  return (
+    <div className="w-screen h-screen bg-black">
+      <Canvas camera={{ position: [0, 0, 4], fov: 45 }}>
+        <ambientLight ref={lightRef} color="#101010" intensity={0.3} />
+        <mesh ref={meshRef}>
+          <sphereGeometry args={[2, 64, 64]} />
+          <meshStandardMaterial
+            color="#000"
+            emissive="#111"
+            transparent
+            opacity={1}
+          />
+        </mesh>
+      </Canvas>
+
+      <TextOverlay
+        main="A potem — znów cisza."
+        sub="And then — silence again."
+        delay={2}
+      />
+    </div>
+  );
+}
+
+🌘 2️⃣ Shader — darkFade.glsl
+
+Delikatny gradient gasnącego światła.
+
+uniform float time;
+varying vec2 vUv;
+
+void main() {
+  vec2 uv = vUv - 0.5;
+  float r = length(uv);
+  float fade = smoothstep(0.3, 1.0, r + sin(time * 0.05) * 0.02);
+  vec3 color = mix(vec3(0.02, 0.03, 0.05), vec3(0.0), fade);
+  gl_FragColor = vec4(color, 1.0);
+}
+
+🌘 3️⃣ TextOverlay.jsx
+
+Powolne zanikanie tekstu do zera.
+
+import { motion } from "framer-motion";
+
+export default function TextOverlay({ main, sub, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 0.8, 0.4, 0] }}
+      transition={{ delay, duration: 10 }}
+      className="absolute top-1/2 left-1/2 text-center text-gray-200 -translate-x-1/2 -translate-y-1/2"
+    >
+      <h1 className="text-3xl font-thin tracking-widest">{main}</h1>
+      <p className="text-sm italic text-gray-400 mt-2">{sub}</p>
+    </motion.div>
+  );
+}
+
+🌑 Efekt całości
+
+Ciemność staje się łagodna, nie absolutna.
+
+Światło dogasa, ale z ciepłem — jak żar w popiele.
+
+Dźwięk: jeden niski ton, który milknie po kilku sekundach.
+
+Tekst powoli znika, aż zostaje tylko pusty ekran.
+
+Ostatni moment to idealna cisza i czerń.
+
+To nie koniec filmu — to powrót do początku.
+Tyle że tym razem widz już wie, co kryje ciemność.
+
+Chcesz, żebym przygotował teraz całość jako spójną strukturę projektu (index wszystkich scen z flow, przejściami i parametrami) — czyli jak wyglądałaby pełna aplikacja z nawigacją między scenami, fade’ami, i dźwiękowym masterem?
+
+Powiedziałeś(-aś):
+dokladnie tak zrob
+ChatGPT powiedział:
+
+Dobrze.
+Złóżmy to w całość — tak, by można było zbudować z tego pełne doświadczenie „Zanim zgasło światło”.
+Nie film, tylko interaktywną podróż: 12 scen, które oddychają razem, z płynnymi przejściami, jedną ścieżką dźwiękową i logiką narracyjną.
+
+🌌 „Zanim zgasło światło” — pełna struktura projektu
+📁 Struktura katalogów
+src/
+ ┣ components/
+ ┃ ┣ scenes/
+ ┃ ┃ ┣ Scene01_Darkness.jsx
+ ┃ ┃ ┣ Scene02_LightBirth.jsx
+ ┃ ┃ ┣ Scene03_MatterBirth.jsx
+ ┃ ┃ ┣ Scene04_Planet.jsx
+ ┃ ┃ ┣ Scene05_Life.jsx
+ ┃ ┃ ┣ Scene06_Time.jsx
+ ┃ ┃ ┣ Scene07_Human.jsx
+ ┃ ┃ ┣ Scene08_Second.jsx
+ ┃ ┃ ┣ Scene09_Fade.jsx
+ ┃ ┃ ┣ Scene10_Reflection.jsx
+ ┃ ┃ ┣ Scene11_Silence.jsx
+ ┃ ┃ ┗ Scene12_Epilogue.jsx
+ ┃ ┣ Navigation.jsx
+ ┃ ┣ SceneTransition.jsx
+ ┃ ┗ GlobalAudio.jsx
+ ┣ shaders/
+ ┃ ┗ (...wszystkie pliki .glsl)
+ ┣ assets/
+ ┃ ┗ sounds/
+ ┃ ┗ textures/
+ ┣ App.jsx
+ ┗ index.js
+
+🧭 Narracyjny flow (emocjonalny i wizualny)
+#	Scena	Emocja / Kolorystyka	Przejście	Tempo
+1	Ciemność	Czerń / kurz / cisza	fade in z pustki	bardzo wolno
+2	Narodziny światła	Niebieski / eter	rozbłysk	powoli
+3	Materia	Fiolet / wir	spiralny ruch	średnio
+4	Planeta	Granat / zieleń	orbitowanie	stabilnie
+5	Życie	Złoto / bursztyn	organiczny puls	rytmicznie
+6	Czas	Srebro / błękit	szybki scroll	intensywnie
+7	Człowiek	Czerwień / glitch	trzask światła	chaotycznie
+8	Sekunda	Biel / światło	freeze	zatrzymanie
+9	Zanik	Pomarańcz / mgła	rozpuszczenie	zwalnianie
+10	Odbicie	Złoto / czerń	błysk świadomości	spokojnie
+11	Cisza	Błękit / głębia	puls światła	wolno
+12	Epilog	Czerń / cień	zanikanie do nicości	wydech
+⚙️ App.jsx — logika sterowania scenami
+import { useState } from "react";
+import Scene01_Darkness from "./components/scenes/Scene01_Darkness";
+import Scene02_LightBirth from "./components/scenes/Scene02_LightBirth";
+import Scene03_MatterBirth from "./components/scenes/Scene03_MatterBirth";
+import Scene04_Planet from "./components/scenes/Scene04_Planet";
+import Scene05_Life from "./components/scenes/Scene05_Life";
+import Scene06_Time from "./components/scenes/Scene06_Time";
+import Scene07_Human from "./components/scenes/Scene07_Human";
+import Scene08_Second from "./components/scenes/Scene08_Second";
+import Scene09_Fade from "./components/scenes/Scene09_Fade";
+import Scene10_Reflection from "./components/scenes/Scene10_Reflection";
+import Scene11_Silence from "./components/scenes/Scene11_Silence";
+import Scene12_Epilogue from "./components/scenes/Scene12_Epilogue";
+import Navigation from "./components/Navigation";
+import SceneTransition from "./components/SceneTransition";
+import GlobalAudio from "./components/GlobalAudio";
+
+export default function App() {
+  const [scene, setScene] = useState(1);
+
+  const nextScene = () => {
+    setScene((prev) => (prev < 12 ? prev + 1 : 12));
+  };
+
+  const scenes = {
+    1: <Scene01_Darkness />,
+    2: <Scene02_LightBirth />,
+    3: <Scene03_MatterBirth />,
+    4: <Scene04_Planet />,
+    5: <Scene05_Life />,
+    6: <Scene06_Time />,
+    7: <Scene07_Human />,
+    8: <Scene08_Second />,
+    9: <Scene09_Fade />,
+    10: <Scene10_Reflection />,
+    11: <Scene11_Silence />,
+    12: <Scene12_Epilogue />,
+  };
+
+  return (
+    <div className="relative w-screen h-screen bg-black overflow-hidden">
+      <GlobalAudio scene={scene} />
+      <SceneTransition scene={scene} />
+      {scenes[scene]}
+      <Navigation scene={scene} nextScene={nextScene} />
+    </div>
+  );
+}
+
+🎚️ GlobalAudio.jsx
+
+Kontroluje dźwięk w tle, miksuje ambient i przejścia między scenami.
+
+import { useEffect } from "react";
+import * as Tone from "tone";
+
+export default function GlobalAudio({ scene }) {
+  useEffect(() => {
+    const synth = new Tone.Synth().toDestination();
+    const vol = new Tone.Volume(-20).toDestination();
+    synth.connect(vol);
+    const toneMap = {
+      1: "A2",
+      2: "C3",
+      3: "E3",
+      4: "G3",
+      5: "A3",
+      6: "C4",
+      7: "C2",
+      8: "F3",
+      9: "D3",
+      10: "A3",
+      11: "B2",
+      12: null,
+    };
+
+    if (toneMap[scene]) {
+      synth.triggerAttackRelease(toneMap[scene], "4n");
+    }
+  }, [scene]);
+}
+
+🌀 SceneTransition.jsx
+
+Fade-out / fade-in między scenami (czysto wizualny most).
+
+import { motion } from "framer-motion";
+
+export default function SceneTransition({ scene }) {
+  return (
+    <motion.div
+      key={scene}
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 0 }}
+      transition={{ duration: 2 }}
+      className="absolute w-full h-full bg-black z-50"
+    />
+  );
+}
+
+🎛️ Navigation.jsx
+
+Umożliwia użytkownikowi przechodzenie przez sceny (kliknięcie lub klawisz).
+
+export default function Navigation({ scene, nextScene }) {
+  return (
+    <div
+      className="absolute bottom-10 left-1/2 -translate-x-1/2 text-gray-500 cursor-pointer text-sm select-none"
+      onClick={nextScene}
+    >
+      {scene < 12 ? "kliknij, aby kontynuować" : ""}
+    </div>
+  );
+}
+
+🪞 System przejść i logika rytmu
+
+Każda scena trwa ok. 30–60 sekund, z automatycznym fade’em.
+Można przejść kliknięciem lub pozwolić aplikacji sama przejść po czasie (setTimeout w App.jsx).
+Światło, kolor i dźwięk są zsynchronizowane przez parametry w GlobalAudio.
+
+🎧 Finalny klimat
+
+Całość to nie film, tylko przestrzeń do doświadczenia.
+Użytkownik siedzi, patrzy, oddycha, przesuwa się przez istnienie — od ciemności, przez światło, czas, człowieka, aż po powrót w ciszy.
+
+Jeśli chcesz, mogę teraz:
+
+przygotować pełny package.json i komendy build/run,
+
+albo wygenerować makietę wizualną (Figma lub Spline) pokazującą, jak to się przelewa scena po scenie (kolory, ułożenie, głębokość).
+
+Którą opcję wybierasz?
+
+Powiedziałeś(-aś):
+zrob opcje 2
+ChatGPT powiedział:
+
+Dobrze.
+Zróbmy więc opcję 2 — wizualną makietę całości, tak jak przygotowałaby to agencja kreatywna przed etapem developmentu.
+Nie chodzi o techniczne szczegóły, tylko wrażenie ruchu, koloru i rytmu — storyboard, który oddycha.
+Pomyśl o tym jak o kinetycznym moodboardzie.
+
+🎞️ Makieta wizualna „Zanim zgasło światło”
+
+(schemat sekwencyjny dla Figmy lub Spline — można go wprost przepisać do layoutu)
+
+🜂 SCENA 1 – Ciemność
+
+Kolor: #000000
+Ruch: żadny.
+Światło: tylko kurz. Subtelne noise w tle.
+Warstwy:
+
+czarne tło
+
+bardzo słaby „volumetric dust”
+Tekst (mały, nisko):
+
+„Był tylko oddech.”
+There was only breath.
+
+🜁 SCENA 2 – Narodziny światła
+
+Kolor: granat + pojedynczy błękit #8AB4FF
+Ruch: pionowy beam rozcinający ciemność (fade-in 5 s).
+Warstwy:
+
+gradient od czerni do błękitu
+
+smuga światła
+
+lekka mgła 3D (parallax)
+Animacja: światło pulsuje 2x, potem zostaje.
+Przejście: lens flare → fade out.
+
+🜃 SCENA 3 – Materia
+
+Kolor: fiolet #9D8CFF z drobinami srebra
+Ruch: spiralny; mgławica formuje się z niczego.
+Warstwy:
+
+głębokie tło
+
+spiralne cząstki (motion blur)
+
+błysk centralny
+Efekt: ruch wciągający do środka (zoom-in).
+Dźwięk: narastający rezonans.
+
+🜄 SCENA 4 – Planeta
+
+Kolor: granat z szaro-niebieskimi refleksami
+Ruch: powolna rotacja, kamera orbituje (parallax 5%).
+Warstwy:
+
+kula z półcieniem
+
+lekka atmosfera (niebieski halo)
+
+pojedynczy refleks światła po lewej
+Tekst (środek):
+
+„Ziemia. Pierwsze spojrzenie na siebie.”
+
+🌿 SCENA 5 – Życie
+
+Kolor: bursztyn, złoto, zieleń
+Ruch: organiczny puls, „oddech” całego ekranu.
+Warstwy:
+
+cząstki organiczne
+
+miękkie gradienty
+
+ciepły lens flare
+Efekt: pulsacja w rytmie ~6 s.
+Dźwięk: harmoniczny dron + ciepły ton serca.
+
+⏳ SCENA 6 – Czas
+
+Kolor: błękit, srebro
+Ruch: spiralny wir, przyspieszenie i spowolnienie (ease in-out).
+Warstwy:
+
+dynamiczne cząstki
+
+lekka poświata
+
+przejście radialne (zoom blur)
+Efekt: wrażenie ruchu w przód.
+Tekst:
+
+„Czas nie płynie. To my przez niego.”
+
+🔥 SCENA 7 – Człowiek
+
+Kolor: czerwień, czerń, glitch
+Ruch: niestabilny, chaotyczny, migotanie 10–15 Hz.
+Warstwy:
+
+glitchowe linie
+
+pulsujący orb (serce)
+
+efekt drgań kamery (GSAP shake)
+Dźwięk: trzaski, uderzenia, echo ludzkiego głosu.
+Tekst (migający):
+
+„Świadomość — kosmos, który zaczął się zastanawiać.”
+
+⚪ SCENA 8 – Sekunda
+
+Kolor: biały.
+Ruch: brak.
+Efekt: całkowity freeze frame, światło przesterowane.
+Dźwięk: odcięcie.
+Tekst (powoli):
+
+„23:59:59 — ostatnia sekunda roku.”
+
+🌤️ SCENA 9 – Zanik
+
+Kolor: pomarańczowy, złamany róż
+Ruch: dryf w dół, cząstki opadają jak pył.
+Warstwy:
+
+fading particles
+
+delikatny halo
+
+ciepłe światło gasnące od środka
+Tekst:
+
+„Wszystko wraca do światła, z którego przyszło.”
+
+✨ SCENA 10 – Odbicie
+
+Kolor: złoto, ciemny granat
+Ruch: powolny puls centralnego orbu (światło reagujące na kursor).
+Warstwy:
+
+złoty orb
+
+refleks lustrzany
+
+soft bloom
+Tekst:
+
+„To, co patrzyło, zawsze patrzyło z wnętrza ciebie.”
+
+🌊 SCENA 11 – Cisza
+
+Kolor: błękit #4B73C8
+Ruch: ekstremalnie wolny puls jasności (ok. 20 s na cykl).
+Warstwy:
+
+miękka sfera
+
+mgła o strukturze oddechu
+
+subtelny gradient
+Dźwięk: prawie niesłyszalny sinus 80 Hz.
+Tekst:
+
+„Cisza nie jest końcem. To miejsce, z którego wszystko wraca.”
+
+🌑 SCENA 12 – Epilog
+
+Kolor: czerń z resztkami bursztynu.
+Ruch: brak, tylko powolne zgaszenie światła.
+Warstwy:
+
+gładka ciemność
+
+subtelne żarzenie pośrodku
+
+fade out do #000000
+Dźwięk: jeden niski ton, cichnący przez 10 s.
+Tekst:
+
+„A potem — znów cisza.”
+
+💠 Przejścia między scenami
+
+fade in/out z przenikaniem koloru poprzedniej sceny (czas: 2–3 s)
+
+między 6 a 7 — gwałtowny „glitch jump”
+
+między 8 a 9 — czysty biały flash (0.2 s)
+
+między 10 a 11 — rozjaśnienie do błękitu
+
+między 11 a 12 — powolne wygaszenie
+
+🧠 Warstwy UX / UI (dla Figmy lub Spline)
+
+Stała warstwa kursora: reagująca subtelnie na ruch (światło podąża).
+
+Dolny pasek: cienka linia progresu (może zgasnąć po kilku sekundach).
+
+Wersja interaktywna: kliknięcie = przejście do następnej sceny.
+
+Mobile: przesunięcie palcem → kolejna scena.
+
+🎨 Stylistyka w Figma / Spline
+
+Jeśli budujesz makietę:
+
+Użyj tła gradientowego z trybem Multiply.
+
+Każdą scenę zrób jako osobny frame (1920×1080 lub 1440×900).
+
+Włącz Smart Animate między frame’ami — czas 2.5–3 s.
+
+Dla błysków i pulsów używaj opacity, nie blur.
+
+Dźwięk możesz dodać w Spline (integracja z WebAudio API).
+
+Chcesz, żebym teraz przygotował pełny prompt do Figmy lub Spline, który automatycznie wygeneruje taką interaktywną makietę (np. w Spline – gotowy kod scen + ruch kamery + światło)?
