@@ -1,37 +1,37 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useRef, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import * as THREE from 'three';
+import { Canvas, useFrame } from '@react-three/fiber'
+import { useRef, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import * as THREE from 'three'
 
 function SpiralParticles({ mouse }: { mouse: { x: number; y: number } }) {
-  const ref = useRef<THREE.Points>(null!);
-  const count = 8000;
+  const ref = useRef<THREE.Points>(null!)
+  const count = 8000
 
   const positions = useMemo(() => {
-    const pos = new Float32Array(count * 3);
+    const pos = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
-      const angle = i * 0.05;
-      const radius = 0.1 + i * 0.0005;
-      pos[i * 3] = Math.cos(angle) * radius;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
-      pos[i * 3 + 2] = Math.sin(angle) * radius;
+      const angle = i * 0.05
+      const radius = 0.1 + i * 0.0005
+      pos[i * 3] = Math.cos(angle) * radius
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.5
+      pos[i * 3 + 2] = Math.sin(angle) * radius
     }
-    return pos;
-  }, []);
+    return pos
+  }, [])
 
   useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
+    const t = clock.getElapsedTime()
     if (ref.current) {
-      ref.current.rotation.y = t * 0.2 + mouse.x * 0.3;
-      ref.current.rotation.z = t * 0.05;
-      ref.current.position.x = Math.sin(t * 0.3) * 0.2;
+      ref.current.rotation.y = t * 0.2 + mouse.x * 0.3
+      ref.current.rotation.z = t * 0.05
+      ref.current.position.x = Math.sin(t * 0.3) * 0.2
     }
-  });
+  })
 
   return (
     <points ref={ref}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} count={count} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
         size={0.015}
@@ -41,20 +41,25 @@ function SpiralParticles({ mouse }: { mouse: { x: number; y: number } }) {
         blending={THREE.AdditiveBlending}
       />
     </points>
-  );
+  )
+}
+
+function PulsingLight() {
+  const lightRef = useRef<THREE.PointLight>(null!)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    if (lightRef.current) {
+      lightRef.current.intensity = 1.2 + Math.sin(t * 5) * 0.6
+      lightRef.current.position.x = Math.sin(t * 0.5) * 3
+    }
+  })
+
+  return <pointLight ref={lightRef} color="#8ABFFF" distance={20} />
 }
 
 export default function Scene06_Time() {
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
-  const lightRef = useRef<THREE.PointLight>(null!);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (lightRef.current) {
-      lightRef.current.intensity = 1.2 + Math.sin(t * 5) * 0.6;
-      lightRef.current.position.x = Math.sin(t * 0.5) * 3;
-    }
-  });
+  const [mouse, setMouse] = useState({ x: 0, y: 0 })
 
   return (
     <div
@@ -68,7 +73,7 @@ export default function Scene06_Time() {
     >
       <Canvas camera={{ position: [0, 0, 9], fov: 60 }}>
         <ambientLight intensity={0.2} />
-        <pointLight ref={lightRef} color="#8ABFFF" distance={20} />
+        <PulsingLight />
         <SpiralParticles mouse={mouse} />
       </Canvas>
       <motion.div
@@ -85,5 +90,5 @@ export default function Scene06_Time() {
         </p>
       </motion.div>
     </div>
-  );
+  )
 }
