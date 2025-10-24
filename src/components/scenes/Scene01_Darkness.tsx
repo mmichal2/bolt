@@ -1,3 +1,5 @@
+// @ts-ignore
+import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useRef, useMemo } from 'react'
 import { motion } from 'framer-motion'
