@@ -1,55 +1,60 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useRef, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import * as THREE from 'three';
+import { Canvas, useFrame } from '@react-three/fiber'
+import { useRef, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import * as THREE from 'three'
 
 function OrganicParticles() {
-  const meshRef = useRef<THREE.Points>(null!);
-  const count = 3000;
+  const meshRef = useRef<THREE.Points>(null!)
+  const count = 3000
 
   const positions = useMemo(() => {
-    const pos = new Float32Array(count * 3);
+    const pos = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
-      const radius = 1.5 + Math.random() * 2;
-      const angle = Math.random() * Math.PI * 2;
-      pos[i * 3] = Math.cos(angle) * radius;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 1.5;
-      pos[i * 3 + 2] = Math.sin(angle) * radius;
+      const radius = 1.5 + Math.random() * 2
+      const angle = Math.random() * Math.PI * 2
+      pos[i * 3] = Math.cos(angle) * radius
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 1.5
+      pos[i * 3 + 2] = Math.sin(angle) * radius
     }
-    return pos;
-  }, []);
+    return pos
+  }, [])
 
   useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
+    const t = clock.getElapsedTime()
     if (meshRef.current) {
-      meshRef.current.rotation.y = t * 0.1;
-      const scale = 1 + Math.sin(t * 1.5) * 0.05;
-      meshRef.current.scale.set(scale, scale, scale);
+      meshRef.current.rotation.y = t * 0.1
+      const scale = 1 + Math.sin(t * 1.5) * 0.05
+      meshRef.current.scale.set(scale, scale, scale)
     }
-  });
+  })
 
   return (
     <points ref={meshRef}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} count={count} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial size={0.025} color="#FFD580" transparent opacity={0.9} />
     </points>
-  );
+  )
+}
+
+function PulsingLight({ mouse }: { mouse: { x: number; y: number } }) {
+  const lightRef = useRef<THREE.PointLight>(null!)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    if (lightRef.current) {
+      lightRef.current.intensity = 2 + Math.sin(t * 1.5) * 0.8
+      lightRef.current.position.x = Math.sin(t * 0.2) * 2 + mouse.x * 2
+      lightRef.current.position.y = Math.cos(t * 0.2) * 1 + mouse.y * 2
+    }
+  })
+
+  return <pointLight ref={lightRef} color="#FFD580" distance={10} />
 }
 
 export default function Scene05_Life() {
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
-  const lightRef = useRef<THREE.PointLight>(null!);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (lightRef.current) {
-      lightRef.current.intensity = 2 + Math.sin(t * 1.5) * 0.8;
-      lightRef.current.position.x = Math.sin(t * 0.2) * 2 + mouse.x * 2;
-      lightRef.current.position.y = Math.cos(t * 0.2) * 1 + mouse.y * 2;
-    }
-  });
+  const [mouse, setMouse] = useState({ x: 0, y: 0 })
 
   return (
     <div
@@ -63,7 +68,7 @@ export default function Scene05_Life() {
     >
       <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
         <ambientLight intensity={0.2} />
-        <pointLight ref={lightRef} color="#FFD580" distance={10} />
+        <PulsingLight mouse={mouse} />
         <OrganicParticles />
       </Canvas>
       <motion.div
@@ -80,5 +85,5 @@ export default function Scene05_Life() {
         </p>
       </motion.div>
     </div>
-  );
+  )
 }
