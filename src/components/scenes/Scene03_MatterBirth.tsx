@@ -3,7 +3,6 @@ import { useRef, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import * as THREE from 'three'
 
-// ✳️ cząstki galaktyki — obracające się punkty reagujące na ruch myszki
 function GalaxyParticles({ mouse }: { mouse: { x: number; y: number } }) {
   const meshRef = useRef<THREE.Points>(null!)
   const count = 5000
@@ -31,19 +30,13 @@ function GalaxyParticles({ mouse }: { mouse: { x: number; y: number } }) {
   return (
     <points ref={meshRef}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          array={positions}
-          count={count}
-          itemSize={3}
-        />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial size={0.015} color="#A3B9FF" transparent opacity={0.7} />
     </points>
   )
 }
 
-// ✳️ osobny komponent z poruszającym się światłem
 function MovingLight() {
   const lightRef = useRef<THREE.PointLight>(null!)
 
