@@ -1,31 +1,47 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
-import { motion } from 'framer-motion';
-import * as THREE from 'three';
+import { Canvas, useFrame } from '@react-three/fiber'
+import { useRef } from 'react'
+import { motion } from 'framer-motion'
+import * as THREE from 'three'
 
-export default function Scene12_Epilogue() {
-  const lightRef = useRef<THREE.AmbientLight>(null!);
-  const meshRef = useRef<THREE.Mesh>(null!);
+function FadingSphere() {
+  const meshRef = useRef<THREE.Mesh>(null!)
 
   useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    const fade = Math.max(0, 1 - t * 0.08);
+    const t = clock.getElapsedTime()
+    const fade = Math.max(0, 1 - t * 0.08)
     if (meshRef.current && meshRef.current.material instanceof THREE.MeshStandardMaterial) {
-      meshRef.current.material.opacity = fade;
+      meshRef.current.material.opacity = fade
     }
-    if (lightRef.current) {
-      lightRef.current.intensity = fade * 0.5;
-    }
-  });
+  })
 
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[2, 64, 64]} />
+      <meshStandardMaterial color="#000" emissive="#111" transparent opacity={1} />
+    </mesh>
+  )
+}
+
+function FadingLight() {
+  const lightRef = useRef<THREE.AmbientLight>(null!)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    const fade = Math.max(0, 1 - t * 0.08)
+    if (lightRef.current) {
+      lightRef.current.intensity = fade * 0.5
+    }
+  })
+
+  return <ambientLight ref={lightRef} color="#101010" intensity={0.3} />
+}
+
+export default function Scene12_Epilogue() {
   return (
     <div className="w-screen h-screen bg-black">
       <Canvas camera={{ position: [0, 0, 4], fov: 45 }}>
-        <ambientLight ref={lightRef} color="#101010" intensity={0.3} />
-        <mesh ref={meshRef}>
-          <sphereGeometry args={[2, 64, 64]} />
-          <meshStandardMaterial color="#000" emissive="#111" transparent opacity={1} />
-        </mesh>
+        <FadingLight />
+        <FadingSphere />
       </Canvas>
       <motion.div
         initial={{ opacity: 0 }}
@@ -37,5 +53,5 @@ export default function Scene12_Epilogue() {
         <p className="text-sm italic text-gray-400 mt-2">And then — silence again.</p>
       </motion.div>
     </div>
-  );
+  )
 }
