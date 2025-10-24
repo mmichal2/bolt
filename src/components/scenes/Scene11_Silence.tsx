@@ -1,37 +1,52 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
-import { motion } from 'framer-motion';
-import * as THREE from 'three';
+import { Canvas, useFrame } from '@react-three/fiber'
+import { useRef } from 'react'
+import { motion } from 'framer-motion'
+import * as THREE from 'three'
 
-export default function Scene11_Silence() {
-  const meshRef = useRef<THREE.Mesh>(null!);
-  const lightRef = useRef<THREE.AmbientLight>(null!);
+function GlowingSphere() {
+  const meshRef = useRef<THREE.Mesh>(null!)
 
   useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
+    const t = clock.getElapsedTime()
     if (meshRef.current && meshRef.current.material instanceof THREE.MeshStandardMaterial) {
-      const intensity = 0.5 + Math.sin(t * 0.2) * 0.2;
-      meshRef.current.material.emissiveIntensity = intensity;
+      const intensity = 0.5 + Math.sin(t * 0.2) * 0.2
+      meshRef.current.material.emissiveIntensity = intensity
     }
-    if (lightRef.current) {
-      lightRef.current.intensity = 1 + Math.sin(t * 0.1) * 0.3;
-    }
-  });
+  })
 
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[2, 64, 64]} />
+      <meshStandardMaterial
+        emissive="#4B73C8"
+        emissiveIntensity={0.5}
+        color="#0A0F1F"
+        roughness={1}
+        metalness={0}
+      />
+    </mesh>
+  )
+}
+
+function BreathingLight() {
+  const lightRef = useRef<THREE.AmbientLight>(null!)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    if (lightRef.current) {
+      lightRef.current.intensity = 1 + Math.sin(t * 0.1) * 0.3
+    }
+  })
+
+  return <ambientLight ref={lightRef} color="#6CA7FF" intensity={1} />
+}
+
+export default function Scene11_Silence() {
   return (
     <div className="w-screen h-screen bg-black">
       <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
-        <ambientLight ref={lightRef} color="#6CA7FF" intensity={1} />
-        <mesh ref={meshRef}>
-          <sphereGeometry args={[2, 64, 64]} />
-          <meshStandardMaterial
-            emissive="#4B73C8"
-            emissiveIntensity={0.5}
-            color="#0A0F1F"
-            roughness={1}
-            metalness={0}
-          />
-        </mesh>
+        <BreathingLight />
+        <GlowingSphere />
       </Canvas>
       <motion.div
         initial={{ opacity: 0 }}
@@ -47,5 +62,5 @@ export default function Scene11_Silence() {
         </p>
       </motion.div>
     </div>
-  );
+  )
 }
