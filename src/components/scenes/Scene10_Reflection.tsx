@@ -1,19 +1,19 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import * as THREE from 'three';
+import { Canvas, useFrame } from '@react-three/fiber'
+import { useState, useRef } from 'react'
+import { motion } from 'framer-motion'
+import * as THREE from 'three'
 
 function GoldenOrb({ mouse }: { mouse: { x: number; y: number } }) {
-  const orbRef = useRef<THREE.Mesh>(null!);
+  const orbRef = useRef<THREE.Mesh>(null!)
 
   useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
+    const t = clock.getElapsedTime()
     if (orbRef.current) {
-      orbRef.current.scale.setScalar(1 + Math.sin(t * 2) * 0.05);
-      orbRef.current.position.x = mouse.x * 1.5;
-      orbRef.current.position.y = mouse.y * 1.2;
+      orbRef.current.scale.setScalar(1 + Math.sin(t * 2) * 0.05)
+      orbRef.current.position.x = mouse.x * 1.5
+      orbRef.current.position.y = mouse.y * 1.2
     }
-  });
+  })
 
   return (
     <mesh ref={orbRef}>
@@ -26,19 +26,24 @@ function GoldenOrb({ mouse }: { mouse: { x: number; y: number } }) {
         color="#FFF1C0"
       />
     </mesh>
-  );
+  )
+}
+
+function PulsingLight() {
+  const lightRef = useRef<THREE.PointLight>(null!)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    if (lightRef.current) {
+      lightRef.current.intensity = 1.5 + Math.sin(t) * 0.5
+    }
+  })
+
+  return <pointLight ref={lightRef} color="#FFD580" distance={15} />
 }
 
 export default function Scene10_Reflection() {
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
-  const lightRef = useRef<THREE.PointLight>(null!);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (lightRef.current) {
-      lightRef.current.intensity = 1.5 + Math.sin(t) * 0.5;
-    }
-  });
+  const [mouse, setMouse] = useState({ x: 0, y: 0 })
 
   return (
     <div
@@ -52,7 +57,7 @@ export default function Scene10_Reflection() {
     >
       <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
         <ambientLight intensity={0.3} />
-        <pointLight ref={lightRef} color="#FFD580" distance={15} />
+        <PulsingLight />
         <GoldenOrb mouse={mouse} />
       </Canvas>
       <motion.div
@@ -69,5 +74,5 @@ export default function Scene10_Reflection() {
         </p>
       </motion.div>
     </div>
-  );
+  )
 }
