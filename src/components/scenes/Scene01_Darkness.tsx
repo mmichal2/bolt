@@ -4,7 +4,6 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { useRef, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import * as THREE from 'three'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import { Stars } from '@react-three/drei'
 
 function QuantumDust() {
@@ -68,4 +67,3 @@ export default function Scene01_Darkness() {
     </div>
   )
 }
-
